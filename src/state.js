@@ -1,30 +1,69 @@
-import { computed, persistentSignal, signal } from "./framework.js";
+import { persistentSignal } from "./framework.js";
+import * as Y from "yjs";
+import { WebrtcProvider } from "y-webrtc";
+import { IndexeddbPersistence } from "y-indexeddb";
+
+export const initWebrtc = () => {
+  const ydoc = new Y.Doc();
+  const provider = new WebrtcProvider("todox-ydoc", ydoc, {
+    password: "optional-room-password",
+  });
+  const persistence = new IndexeddbPersistence("todox-ydoc", ydoc);
+  return [ydoc, persistence];
+};
 
 export const state = () => {
   const $filter = persistentSignal("filter", "all");
+  const [ydoc, persistence] = initWebrtc();
 
-  const $todos = persistentSignal("todos", defaultTodos, {
-    onInit: (x) => x.map((x) => signal(x)),
-    onSet: (x) => x.map(($x) => $x.value),
+  const yTodos = ydoc.getArray("todos");
+
+  persistence.once("synced", () => {
+    if (yTodos.length === 0) {
+      const yTodoArray = defaultTodos.map((todo, index) => {
+        const yTodo = new Y.Map();
+        Object.entries(todo).map(([name, value]) => {
+          yTodo.set(name, value);
+        });
+        return yTodo;
+      });
+      yTodos.insert(0, yTodoArray);
+    }
   });
 
-  const $filteredTodos = computed(() => {
-    const todos = $todos.value;
+  const filteredTodos = () => {
     const filter = $filter.value;
-
-    return filter === "active"
-      ? todos.filter(($todo) => !$todo.value.checked)
-      : filter === "completed"
-        ? todos.filter(($todo) => $todo.value.checked)
-        : todos;
-  });
-
-  const onAdd = (text) => {
-    $todos.value = [signal({ text, checked: false }), ...$todos.value];
+    return yTodos;
+    // return filter === "active"
+    //   ? yTodos.toArray().filter((todo) => !todo.checked) //todo remove toArray
+    //   : filter === "completed"
+    //   ? yTodos.toArray().filter((todo) => todo.checked)
+    //   : yTodos;
   };
 
-  const onRemove = ($todo) => {
-    $todos.value = $todos.value.filter((x) => x !== $todo);
+  const onAdd = (text) => {
+    const yTodo = new Y.Map();
+    yTodo.set("text", text);
+    yTodo.set("checked", false);
+
+    yTodos.insert(0, [yTodo]);
+  };
+
+  const onEdit = (yTodo, text) => {
+    yTodo.set("text", text);
+  };
+
+  const onCheck = (yTodo, checked) => {
+    yTodo.set("checked", checked);
+  };
+
+  const onRemove = (yTodo) => {
+    const todos = yTodos.toArray();
+    const index = todos.indexOf(yTodo);
+
+    if (index !== -1) {
+      yTodos.delete(index);
+    }
   };
 
   const onFilter = (filter) => {
@@ -33,8 +72,10 @@ export const state = () => {
 
   return {
     $filter,
-    $todos: $filteredTodos,
+    todos: filteredTodos(),
     onAdd,
+    onEdit,
+    onCheck,
     onRemove,
     onFilter,
   };

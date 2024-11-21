@@ -1,31 +1,35 @@
-import { effect, render } from "../framework.js";
+import { render } from "../framework.js";
 
-export const TodoItem = ({ $todo, onRemove }) => {
+export const TodoItem = ({ todo: yTodo, onRemove, onEdit, onCheck }) => {
+  let todo = yTodo.toJSON();
   const id = "id" + Math.random().toString(16).slice(2);
   const handleCheck = (e) => {
     e.preventDefault();
-    $todo.value = { ...$todo.value, checked: e.target.checked };
+    onCheck(yTodo, e.target.checked);
   };
   const handleEdit = (e) => {
     e.preventDefault();
-    $todo.value = { ...$todo.value, text: e.target.innerText };
+    onEdit(yTodo, e.target.innerText);
   };
   return render`
     <li class="list-group-item todox-list-group-item-action hstack gap-3 pe-1 align-items-start">
       ${render`
-        <input id="${id}" type="checkbox" class="form-check-input" />
+        <input id="${id}" type="checkbox" class="form-check-input" ${
+        todo.checked ? "checked" : ""
+      } />
         ${(element) => {
           element.addEventListener("change", handleCheck);
 
-          effect(() => {
-            const { checked } = $todo.value;
-            element.checked = checked;
+          yTodo.observe((event) => {
+            element.checked = yTodo.get("checked");
           });
         }}
       `}
       
       ${render`
-        <div class="d-inline flex-fill todox-item-editable" contenteditable="true"/>
+        <div class="d-inline flex-fill todox-item-editable" contenteditable="true">${
+          todo.text
+        }</div>>
         ${(element) => {
           let isFocused = false;
           element.addEventListener("input", handleEdit);
@@ -35,13 +39,11 @@ export const TodoItem = ({ $todo, onRemove }) => {
           element.addEventListener("blur", () => {
             isFocused = false;
           });
-
-          effect(() => {
-            const { text, checked } = $todo.value;
+          yTodo.observe((event) => {
+            const { text, checked } = yTodo.toJSON();
             if (!isFocused) {
               element.innerText = text;
             }
-
             element.style.opacity = checked ? 0.5 : 1;
           });
         }}
@@ -56,7 +58,7 @@ export const TodoItem = ({ $todo, onRemove }) => {
         </button>
          ${(element) => {
            element.addEventListener("click", () => {
-             onRemove($todo);
+             onRemove(yTodo);
            });
          }}
       `}

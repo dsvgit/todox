@@ -47,13 +47,14 @@ export const render = (strings, ...elements) => {
   return template.content.children;
 };
 
-export const For = ({ $list, component, children }) => {
+export const For = ({ list, component, children }) => {
   component = component[0];
   const itemToElement = new WeakMap();
+  list.observe((event) => {
+    updateTree(list);
+  });
 
-  effect(() => {
-    const list = $list.value;
-
+  const updateTree = (list) => {
     const elements = list.map((item) => {
       const cached = itemToElement.get(item);
 
@@ -67,7 +68,7 @@ export const For = ({ $list, component, children }) => {
     });
 
     component.replaceChildren(...elements);
-  });
+  };
 
   return component;
 };
@@ -75,7 +76,7 @@ export const For = ({ $list, component, children }) => {
 export const persistentSignal = (
   name,
   initialValue,
-  { onInit, onSet } = {},
+  { onInit, onSet } = {}
 ) => {
   let state;
   try {
