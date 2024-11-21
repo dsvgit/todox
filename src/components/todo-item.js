@@ -1,6 +1,6 @@
 import { render } from "../framework.js";
 
-export const TodoItem = ({ todo: yTodo, onRemove, onEdit, onCheck }) => {
+export const TodoItem = ({ yTodo, onRemove, onEdit, onCheck }) => {
   let todo = yTodo.toJSON();
   const id = "id" + Math.random().toString(16).slice(2);
   const handleCheck = (e) => {

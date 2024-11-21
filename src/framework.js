@@ -47,14 +47,13 @@ export const render = (strings, ...elements) => {
   return template.content.children;
 };
 
-export const For = ({ list, component, children }) => {
+export const For = ({ $list, component, children }) => {
   component = component[0];
   const itemToElement = new WeakMap();
-  list.observe((event) => {
-    updateTree(list);
-  });
 
-  const updateTree = (list) => {
+  const update = () => {
+    const list = $list.value;
+
     const elements = list.map((item) => {
       const cached = itemToElement.get(item);
 
@@ -69,6 +68,8 @@ export const For = ({ list, component, children }) => {
 
     component.replaceChildren(...elements);
   };
+
+  effect(update);
 
   return component;
 };

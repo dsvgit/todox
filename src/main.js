@@ -7,7 +7,7 @@ import { Version } from "./components/version.js";
 import { ThemeSwitch } from "./components/theme-switch.js";
 
 const App = () => {
-  const { todos, $filter, onAdd, onRemove, onEdit, onFilter, onCheck } =
+  const { $todos, $filter, onAdd, onRemove, onEdit, onFilter, onCheck } =
     state();
 
   return render`
@@ -24,7 +24,7 @@ const App = () => {
         </header>
         ${TodoFilter({ $filter, onFilter })}
         ${TodoInput({ onAdd })}
-        ${TodoList({ todos, onRemove, onEdit, onCheck })}
+        ${TodoList({ $todos, onRemove, onEdit, onCheck })}
       </div>
     </div>
   `;
